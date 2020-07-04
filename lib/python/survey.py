@@ -167,6 +167,7 @@ class Survey:
                         # pointfptr = open(filepath, 'r')
                         filename = filepath
                     except:
+                        #Adam note: potentially a bug here...
                         s = 'File {0} does not exist!!!'.format(pointfpath)
                         raise CoordinateException(s)
 
@@ -272,6 +273,8 @@ class Survey:
             elif a[1].count('Aperture Array'):
                 # turn on AA
                 self.AA = True
+            elif a[1].count('days on sky'):
+                self.dos=float(a[0].strip())
             else:
                 print("Parameter '", a[1].strip(), "' not recognized!")
 
@@ -389,7 +392,6 @@ class Survey:
                 print("Use populate with --singlepulse")
                 sys.exit()
             pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
-        
 
         if pulsar.dead:
             return 0.
@@ -461,6 +463,7 @@ class Survey:
         else:
             #find number of times the pulse will pop up!
             #pop_time=int(pulsar.br*self.tobs)
+            #Need to optimise this code...
             if pulsar.pop_time >= 1.0:
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
@@ -468,12 +471,14 @@ class Survey:
                 mu=math.log10(pulsar.lum_inj_mu)
                 sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
+                #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
                 for burst_times in range(pulsar.pop_time):
                     pulsar.lum_1400=dist.drawlnorm(mu,sig)
                     lums.append(pulsar.lum_1400)
                     flux=self.calcflux(pulsar, pop.ref_freq)
                     fluxes[burst_times]=flux
-                    pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
+                    #ADAM EDIT: width changed to seconds instead of microseconds???
+                    pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
                 pulsar.lum_1400=np.max(lums)
                 sig_to_noise = np.max(pulse_snr)
                 if sig_to_noise >= self.SNRlimit:
@@ -498,7 +503,8 @@ class Survey:
                                            1)
             elif accelsearch:
                 #print "accel"
-                gamma = degaadation.gamma2(pulsar,
+                #Adam fix bug
+                gamma = degradation.gamma2(pulsar,
                                            self.tobs,
                                            1)
             else:

@@ -8,7 +8,8 @@ import random
 from population import Population
 from pulsar import Pulsar
 from survey import Survey
-
+from CHIME_props import calc_gain
+from CHIME_props import calc_tobs
 if sys.version_info[0] < 3:
     import cPickle
 else:
@@ -119,11 +120,13 @@ def run(pop,
             # pulsar could be dead (evolve!) - continue if so
             if psr.dead:
                 continue
-
+            #if the survey is CHIME FRB, need to set custom gain and t_obs
+            if s.surveyName == 'CHIME':
+                s.gain = calc_gain(psr)
+                s.tobs = s.dos*calc_tobs(psr)
             # is the pulsar over the detection threshold?
             snr = s.SNRcalc(psr, pop,accelsearch,jerksearch,rratssearch)
             #print snr
-
             # add scintillation, if required
             # modifying S/N rather than flux is sensible because then
             # a pulsar can have same flux but change S/N in repeated surveys

@@ -202,7 +202,6 @@ def generate(ngen,
         # make an empty list here - makes some code just a little
         # simpler - can still loop over an empty list (ie zero times)
         surveys = []
-
     while pop.ndet < ngen:
         # Declare new pulsar object
         p = Pulsar()
@@ -245,7 +244,6 @@ def generate(ngen,
                     A1=random.gauss(0.49986684,0.13035004)
                     A2=random.gauss(-0.77626305,0.4222085)
                     width = 10**(A1*math.log10(p.period)+ A2)
-
             p.width_degree = width*360./p.period
         else:
             # use the model to caculate if beaming
@@ -293,6 +291,7 @@ def generate(ngen,
             # use gl and gb to compute galactic coordinates
             # pretend the pulsar is at distance of 1kpc
             # not sure why, ask Dunc!
+            #Adam comment ,1 Kpc makes no sense here...
             p.galCoords = go.lb_to_xyz(p.gl, p.gb, 1.0)
 
         elif pop.radialDistType == 'slab':
@@ -579,8 +578,9 @@ def _beaming(psr):
 
 def _burst():
     #number of times it pops up during the survey
-    burst_rate=(10.0**dists.uniform(-0.5,3))/3600.0
-    #print pop_time
+    #ADAM EDIT ORIGINALL -0.5, can't have log of negative number
+    #Adam second edit : alright have power in the distributions.py file
+    burst_rate=(dists.uniform(0.1,3))/3600.0
     return(burst_rate)
 
 
