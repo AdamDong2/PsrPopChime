@@ -111,7 +111,7 @@ class Population:
         """Write the population object to a file"""
 
         output = open(outf, 'wb')
-        cPickle.dump(self, output, 2)
+        cPickle.dump(self, output, 4)
         output.close()
 
     def write_asc(self, outf):

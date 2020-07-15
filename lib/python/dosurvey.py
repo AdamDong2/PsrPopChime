@@ -120,10 +120,12 @@ def run(pop,
             # pulsar could be dead (evolve!) - continue if so
             if psr.dead:
                 continue
-            #if the survey is CHIME FRB, need to set custom gain and t_obs
+            #ADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
             if s.surveyName == 'CHIME':
                 s.gain = calc_gain(psr)
                 s.tobs = s.dos*calc_tobs(psr)
+                psr.gain = s.gain
+                psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
             snr = s.SNRcalc(psr, pop,accelsearch,jerksearch,rratssearch)
             #print snr

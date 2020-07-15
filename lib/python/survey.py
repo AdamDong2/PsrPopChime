@@ -379,7 +379,8 @@ class Survey:
                 pop,
                 accelsearch=False,
                 jerksearch=False,
-                rratssearch=False):
+                rratssearch=False,
+                giantpulse=False):
         """Calculate the S/N ratio of a given pulsar in the survey"""
         # if not in region, S/N = 0
 
@@ -445,12 +446,13 @@ class Survey:
         delta = weff_ms / pulsar.period
 
         # if pulse is smeared out, return -1.0
-        if delta > 1.0: #and pulsar.pop_time >= 1.0:
+        #don't really get smearing with giant pulse or rrat search right?
+        if (delta > 1.0) & (not giantpulse) & (not rratssearch): #and pulsar.pop_time >= 1.0:
             # print width_ms, self.tsamp, tdm, tscat
             return -1
 
         # radiometer signal to noise
-        if rratssearch==False:
+        if (rratssearch==False) & (giantpulse==False):
             sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
                                        self.beta,
                                        self.tsys,
@@ -460,7 +462,35 @@ class Survey:
                                        self.tobs,
                                        self.bw,
                                        delta)
-        else:
+        elif giantpulse:
+            #check how many times it burst
+            #use 0.001 as the fraction of periods to emit a GP for now - place holder
+            #values here currently taken from Popov et al 2007
+            pulses = 0.001*(self.tobs/pulsar.period)
+            GP_flux=np.zeros(int(pulses))
+            GP_lum=np.zeros(int(pulses))
+            GP_snr=np.zeros(int(pulses))
+            for i in range(int(pulses)):
+                #parameters needs to be changed for later
+                fluence=dist.power_law_dual(1000,11000,2000,200,-3.2,-1.9)
+                #use pulse width of 55ms for now
+                #the flux calculated here is for the Crab, so we'll have to use a different distance measure.
+                average_flux = fluence/(55e-6)
+                #2 kpc away to get luminosity
+                lum = average_flux*(2**2)
+                flux= self._GPFlux(pulsar,lum,1280)
+                GP_lum[i]=lum
+                GP_flux[i]=flux
+                GP_snr[i]=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
+            pulsar.lum_1400 = np.max(GP_lum)
+            sig_to_noise = np.max(GP_snr)
+            if sig_to_noise >= self.SNRlimit:
+                pulsar.det_pulses=fluxes[GP_snr >= self.SNRlimit]
+                pulsar.det_nos=len(pulsar.det_pulses)
+            else:
+                pulsar.det_pulses=None
+                pulsar.det_nos=0               
+        elif rratssearch:
             #find number of times the pulse will pop up!
             #pop_time=int(pulsar.br*self.tobs)
             #Need to optimise this code...
@@ -477,7 +507,7 @@ class Survey:
                     lums.append(pulsar.lum_1400)
                     flux=self.calcflux(pulsar, pop.ref_freq)
                     fluxes[burst_times]=flux
-                    #ADAM EDIT: width changed to seconds instead of microseconds???
+                    #ADAM EDIT: width changed to seconds instead of miliseconds???
                     pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
                 pulsar.lum_1400=np.max(lums)
                 sig_to_noise = np.max(pulse_snr)
@@ -543,10 +573,14 @@ class Survey:
         offset_from_zenith = dec - (self.DECmax + self.DECmin)/2.0
 
         return math.cos(math.radians(offset_from_zenith))
+    def _GPFlux(self,psr,lum,ref_freq):
+        """ADAM's fn - calculate the giant pulse flux"""
+        spindex = psr.spindex
+        flux = lum/(psr.dtrue)**2
+        return (flux*(self.freq/ref_freq)**spindex)
 
     def calcflux(self, psr, ref_freq):
         """Calculate the flux at this frequency"""
-
         if psr.gpsFlag == 1:
             # do crazy flux calculation for GPS sources
             return self._gpsFlux(psr, ref_freq)

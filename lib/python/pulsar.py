@@ -33,6 +33,7 @@ class Pulsar(Orbit):
                  t_scatter=None,
                  gpsFlag=0,
                  gpsA=None,
+                 giant_pulse=None,
                  brokenFlag=0,
                  brokenSI=None,
                  br=None,
@@ -45,6 +46,8 @@ class Pulsar(Orbit):
                  ec = 0.01, #eccentricity of bns system; required for orb_degfac calculation
                  pod = 0.1, #orbital period of bns system; required for orb_degfac calculation
                  orb_degfac = 1.0,  #Add in orbital degradation factor for each pulsar
+                 gain=None,
+                 tobs=None,
                  *args,
                  **kwargs):
         """___init___ function for the Pulsar class"""
@@ -111,7 +114,9 @@ class Pulsar(Orbit):
         
         #Set the orbital degradation factor:
         self.orb_degfac = orb_degfac
-
+        self.gain = gain
+        self.tobs=tobs
+        self.giant_pulse = giant_pulse
     # methods to calculate derived properties
     def s_1400(self):
         """Calculate the flux of the pulsar"""

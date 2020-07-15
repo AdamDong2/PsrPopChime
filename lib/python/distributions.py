@@ -1,4 +1,7 @@
-#!/usr/bin/python
+
+#using tranverse sampling methods
+#using tranverse sampling methods
+#using tranverse sampling methods#!/usr/bin/python
 
 import sys
 import math
@@ -10,6 +13,23 @@ def drawlnorm(mean, sigma):
 
     return 10.0**random.gauss(mean, sigma)
 
+
+def power_law_dual(xmin,xmax,xtransition,nbreak,power1,power2):
+    logmin = math.log10(xmin)
+    logmax= math.log10(xmax)
+    logtransition = math.log10(xtransition)
+    c1 =math.log10(nbreak)-power1*math.log10(xtransition) 
+    c2 = math.log10(nbreak)-power2*math.log10(xtransition)
+    nmax = 10.0**(power2*logmin + c2)
+    #using inverse sampling methods
+    samplen=random.random()*nmax
+    if samplen<=nbreak:
+        #use the lower power law
+        x = 10**((math.log10(samplen)-c1)/power1)
+    else:
+        #use the upper power law
+        x = 10**((math.log10(samplen)-c2)/power2)
+    return x
 
 def powerlaw(minval, maxval, power):
     """Draw a value randomly from the specified power law"""
