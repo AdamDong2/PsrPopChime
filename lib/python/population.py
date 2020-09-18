@@ -1,10 +1,13 @@
 #!/usr/bin/python
 
-import copy
-import cPickle
+import copy, sys
 
 import numpy as np
 
+if sys.version_info[0] < 3:
+    import cPickle
+else:
+    import pickle as cPickle
 
 class Population:
 
@@ -22,10 +25,12 @@ class Population:
                  lumsigma=None,
                  zscale=None,
                  electronModel=None,
-                 gpsFrac=None,
+                 gpsFrac=-1,
                  gpsA=None,
                  brokenFrac=None,
                  brokenSI=None,
+                 bns = False,
+                 orbparams = {},
                  ref_freq=1400.0):
 
         """Initialise the population object."""
@@ -52,7 +57,11 @@ class Population:
         self.zscale = zscale
 
         self.ref_freq = ref_freq
-
+        
+        #Set whether we are looking at BNS systems:
+        self.bns = bns
+        self.orbparams = orbparams
+        
         # GPS and double SI values
         self.gpsFrac = gpsFrac
         self.gpsA = gpsA
@@ -102,7 +111,7 @@ class Population:
         """Write the population object to a file"""
 
         output = open(outf, 'wb')
-        cPickle.dump(self, output, 2)
+        cPickle.dump(self, output, 4)
         output.close()
 
     def write_asc(self, outf):

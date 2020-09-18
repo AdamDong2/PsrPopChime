@@ -167,6 +167,7 @@ class Survey:
                         # pointfptr = open(filepath, 'r')
                         filename = filepath
                     except:
+                        #Adam note: potentially a bug here...
                         s = 'File {0} does not exist!!!'.format(pointfpath)
                         raise CoordinateException(s)
 
@@ -272,8 +273,10 @@ class Survey:
             elif a[1].count('Aperture Array'):
                 # turn on AA
                 self.AA = True
+            elif a[1].count('days on sky'):
+                self.dos=float(a[0].strip())
             else:
-                print "Parameter '", a[1].strip(), "' not recognized!"
+                print("Parameter '", a[1].strip(), "' not recognized!")
 
         f.close()
 
@@ -376,7 +379,8 @@ class Survey:
                 pop,
                 accelsearch=False,
                 jerksearch=False,
-                rratssearch=False):
+                rratssearch=False,
+                giantpulse=False):
         """Calculate the S/N ratio of a given pulsar in the survey"""
         # if not in region, S/N = 0
 
@@ -385,11 +389,10 @@ class Survey:
         # (loops over the list of pointings....)
         if rratssearch:
             if pulsar.br is None:
-                print "Population doesn't have a burst rate"
-                print "Use populate with --singlepulse"
+                print("Population doesn't have a burst rate")
+                print("Use populate with --singlepulse")
                 sys.exit()
             pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
-        
 
         if pulsar.dead:
             return 0.
@@ -443,24 +446,66 @@ class Survey:
         delta = weff_ms / pulsar.period
 
         # if pulse is smeared out, return -1.0
-        if delta > 1.0: #and pulsar.pop_time >= 1.0:
+        #don't really get smearing with giant pulse or rrat search right?
+        if (delta > 1.0) & (not giantpulse) & (not rratssearch): #and pulsar.pop_time >= 1.0:
             # print width_ms, self.tsamp, tdm, tscat
             return -1
 
         # radiometer signal to noise
-        if rratssearch==False:
-            sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
-                                       self.beta,
-                                       self.tsys,
-                                       self.tskypy(pulsar),
-                                       self.gain,
-                                       self.npol,
-                                       self.tobs,
-                                       self.bw,
-                                       delta)
-        else:
+        if (rratssearch==False) & (giantpulse==False):
+            if self.surveyName=='CHIME':
+                #print('CHIME')
+                sig_to_noise=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,self.calcflux(pulsar, pop.ref_freq),self.beta)
+            else:
+                sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
+                                           self.beta,
+                                           self.tsys,
+                                           self.tskypy(pulsar),
+                                           self.gain,
+                                           self.npol,
+                                           self.tobs,
+                                           self.bw,
+                                           delta)
+        elif giantpulse:
+            #check how many times it burst
+            #use 0.001 as the fraction of periods to emit a GP for now - place holder
+            #values here currently taken from Popov et al 2007
+            if pulsar.period<100:
+                pulses = 0.001*(self.tobs/(1e-3*pulsar.period))
+                GP_flux=np.zeros(int(pulses))
+                GP_lum=np.zeros(int(pulses))
+                GP_snr=np.zeros(int(pulses))
+                if pulses>1:
+                    for i in range(int(pulses)):
+                        #parameters needs to be changed for later
+                        #working in units of Jy us
+                        fluence=dist.power_law_dual(1000,11000,2000,200,-3.2,-1.9)
+                        #use pulse width of 55ms for now
+                        #the flux calculated here is for the Crab, so we'll have to use a different distance measure.
+                        average_flux = fluence/(55)
+                        #2 kpc away to get luminosity at 1400Mhz from 1200 Mhz, hard code this for now
+                        lum_1400 = average_flux*(2**2)*(1400/1200)**pulsar.spindex
+                        #scale down/up to survey frequency
+                        flux= self._GPFlux(pulsar,lum_1400,1400)
+                        GP_lum[i]=lum_1400
+                        GP_flux[i]=flux
+                        GP_snr[i]=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
+                    pulsar.lum_1400 = np.max(GP_lum)
+                    sig_to_noise = np.max(GP_snr)
+                    if sig_to_noise >= self.SNRlimit:
+                        pulsar.det_pulses=GP_flux[GP_snr >= self.SNRlimit]
+                        pulsar.det_nos=len(pulsar.det_pulses)
+                    else:
+                        pulsar.det_pulses=None
+                        pulsar.det_nos=0
+                else:
+                    return -3
+            else:
+                return -3
+        elif rratssearch:
             #find number of times the pulse will pop up!
             #pop_time=int(pulsar.br*self.tobs)
+            #Need to optimise this code...
             if pulsar.pop_time >= 1.0:
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
@@ -468,12 +513,14 @@ class Survey:
                 mu=math.log10(pulsar.lum_inj_mu)
                 sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
+                #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
                 for burst_times in range(pulsar.pop_time):
                     pulsar.lum_1400=dist.drawlnorm(mu,sig)
                     lums.append(pulsar.lum_1400)
                     flux=self.calcflux(pulsar, pop.ref_freq)
                     fluxes[burst_times]=flux
-                    pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
+                    #ADAM EDIT: width changed to seconds instead of miliseconds???
+                    pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
                 pulsar.lum_1400=np.max(lums)
                 sig_to_noise = np.max(pulse_snr)
                 if sig_to_noise >= self.SNRlimit:
@@ -492,39 +539,41 @@ class Survey:
         if pulsar.is_binary:
             # print "the pulsar is a binary!"
             if jerksearch:
-                print "jerk"
+                #print "jerk"
                 gamma = degradation.gamma3(pulsar,
                                            self.tobs,
                                            1)
             elif accelsearch:
-                print "accel"
-                gamma = degaadation.gamma2(pulsar,
+                #print "accel"
+                #Adam fix bug
+                gamma = degradation.gamma2(pulsar,
                                            self.tobs,
                                            1)
             else:
-                print "norm"
+                #print "norm"
                 gamma = degradation.gamma1(pulsar,
                                            self.tobs,
                                            1)
 
-                print "gamma harm1 = ", gamma
+                #print "gamma harm1 = ", gamma
 
                 gamma = degradation.gamma1(pulsar,
                                            self.tobs,
                                            2)
 
-                print "gamma harm2 = ", gamma
+                #print "gamma harm2 = ", gamma
                 gamma = degradation.gamma1(pulsar,
                                            self.tobs,
                                            3)
 
-                print "gamma harm3 = ", gamma
+                #print "gamma harm3 = ", gamma
                 gamma = degradation.gamma1(pulsar,
                                            self.tobs,
                                            4)
-                print "gamma harm4 = ", gamma
+                #print "gamma harm4 = ", gamma
 
         # return the S/N accounting for beam offset
+        
         return sig_to_noise * degfac
 
     def _AA_factor(self, pulsar):
@@ -536,10 +585,14 @@ class Survey:
         offset_from_zenith = dec - (self.DECmax + self.DECmin)/2.0
 
         return math.cos(math.radians(offset_from_zenith))
+    def _GPFlux(self,psr,lum,ref_freq):
+        """ADAM's fn - calculate the giant pulse flux"""
+        spindex = psr.spindex
+        flux = lum/(psr.dtrue)**2
+        return (flux*(self.freq/ref_freq)**spindex)
 
     def calcflux(self, psr, ref_freq):
         """Calculate the flux at this frequency"""
-
         if psr.gpsFlag == 1:
             # do crazy flux calculation for GPS sources
             return self._gpsFlux(psr, ref_freq)

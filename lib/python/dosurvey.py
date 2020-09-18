@@ -5,12 +5,15 @@ import argparse
 import math
 import random
 
-import cPickle
-
 from population import Population
 from pulsar import Pulsar
 from survey import Survey
-
+from CHIME_props import calc_gain
+from CHIME_props import calc_tobs
+if sys.version_info[0] < 3:
+    import cPickle
+else:
+    import pickle as cPickle
 
 class Detections:
     """Just a simple object to store survey detection summary"""
@@ -85,14 +88,15 @@ def run(pop,
         scint=False,
         accelsearch=False,
         jerksearch=False,
-        rratssearch=False):
+        rratssearch=False,
+        giantpulse=False):
 
     """ Run the surveys and detect the pulsars."""
 
     # print the population
     if not nostdout:
-        print "Running doSurvey on population..."
-        print pop
+        print("Running doSurvey on population...")
+        print(pop)
 
     # loop over the surveys we want to run on the pop file
     surveyPops = []
@@ -100,7 +104,7 @@ def run(pop,
         s = Survey(surv)
         s.discoveries = 0
         if not nostdout:
-            print "\nRunning survey {0}".format(surv)
+            print("\nRunning survey {0}".format(surv))
 
         # create a new population object to store discovered pulsars in
         survpop = Population()
@@ -117,11 +121,15 @@ def run(pop,
             # pulsar could be dead (evolve!) - continue if so
             if psr.dead:
                 continue
-
+            #ADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
+            if s.surveyName == 'CHIME':
+                s.gain = calc_gain(psr)
+                s.tobs = s.dos*calc_tobs(psr)
+                psr.gain = s.gain
+                psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
-            snr = s.SNRcalc(psr, pop,accelsearch,jerksearch,rratssearch)
+            snr = s.SNRcalc(psr, pop,accelsearch,jerksearch,rratssearch,giantpulse)
             #print snr
-
             # add scintillation, if required
             # modifying S/N rather than flux is sensible because then
             # a pulsar can have same flux but change S/N in repeated surveys
@@ -152,15 +160,17 @@ def run(pop,
 
         # report the results
         if not nostdout:
-            print "Total pulsars in model = {0}".format(len(pop.population))
-            print "Number detected by survey {0} = {1}".format(surv, ndet)
-            print "Of which are discoveries = {0}".format(s.discoveries)
-            print "Number too faint = {0}".format(ntf)
-            print "Number smeared = {0}".format(nsmear)
-            print "Number out = {0}".format(nout)
+            print("Total pulsars in model = {0}".format(len(pop.population)))
+            print("Number detected by survey {0} = {1}".format(surv, ndet))
+            print("Of which are discoveries = {0}".format(s.discoveries))
+            print("Number too faint = {0}".format(ntf))
+            print("Number smeared = {0}".format(nsmear))
+            print("Number out = {0}".format(nout))
             if rratssearch:
-                print "Number didn't burst = {0}".format(nbr)
-            print "\n"
+                print("Number didn't burst = {0}".format(nbr))
+            if giantpulse:
+                print("Number who don't exhibit giant pulses = {0}".format(nbr))
+            print("\n")
 
         d = Detections(ndet=ndet,
                        ntf=ntf,

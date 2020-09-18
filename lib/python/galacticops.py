@@ -11,16 +11,16 @@ import ctypes as C
 # get the FORTRAN libraries
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 __libdir__ = os.path.dirname(__dir__)
-fortranpath = os.path.join(__libdir__, 'fortran')
-Cpath = os.path.join(__libdir__, 'C')
+fortranpath = os.path.join(__libdir__, 'fortran').encode()
+Cpath = os.path.join(__libdir__, 'C').encode()
 
-ne2001lib = C.CDLL(os.path.join(fortranpath, 'libne2001.so'))
+ne2001lib = C.CDLL(os.path.join(fortranpath, 'libne2001.so'.encode()))
 ne2001lib.dm_.restype = C.c_float
 
-slalib = C.CDLL(os.path.join(fortranpath, 'libsla.so'))
-vxyzlib = C.CDLL(os.path.join(fortranpath, 'libvxyz.so'))
+slalib = C.CDLL(os.path.join(fortranpath, 'libsla.so'.encode()))
+vxyzlib = C.CDLL(os.path.join(fortranpath, 'libvxyz.so'.encode()))
 
-yklib = C.CDLL(os.path.join(fortranpath, 'libykarea.so'))
+yklib = C.CDLL(os.path.join(fortranpath, 'libykarea.so'.encode()))
 yklib.ykr_.restype = C.c_float
 yklib.llfr_.restype = C.c_float
 
@@ -63,8 +63,9 @@ def vxyz(pulsar):
     pulsar.vz = vz.value
 
 
-def calc_dtrue((x, y, z)):
-    """Calculate true distance to pulsar from the sun."""
+def calc_dtrue(cart_pos):
+    """Calculate true distance to pulsar from the sun. ip cart_pos should be tuple with (x,y,z)"""
+    x, y, z = cart_pos
     rsun = 8.5  # kpc
     return math.sqrt(x*x + (y-rsun)*(y-rsun) + z*z)
 
@@ -209,8 +210,9 @@ def radec_to_lb(ra, dec):
     return l.value, b.value
 
 
-def xyz_to_lb((x, y, z)):
+def xyz_to_lb(cart_pos):
     """ Convert galactic xyz in kpc to l and b in degrees."""
+    x, y, z = cart_pos
     rsun = 8.5  # kpc
 
     # distance to pulsar
@@ -382,7 +384,7 @@ def _double_sided_exp(scale, origin=0.0):
 def readtskyfile():
     """Read in tsky.ascii into a list from which temps can be retrieved"""
 
-    tskypath = os.path.join(fortranpath, 'lookuptables/tsky.ascii')
+    tskypath = os.path.join(fortranpath, 'lookuptables/tsky.ascii'.encode())
     tskylist = []
     with open(tskypath) as f:
         for line in f:

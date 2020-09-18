@@ -1,8 +1,12 @@
 #!/usr/bin/python
 
-import os
-
+import os, sys
 import ctypes as C
+
+if sys.version_info[0] < 3:
+    import cPickle
+else:
+    import pickle as cPickle
 
 # get the FORTRAN libraries
 __dir__ = os.path.dirname(os.path.abspath(__file__))

@@ -1,9 +1,11 @@
 #!/usr/bin/python
 
-import os
+import os, sys
 
-import cPickle
-
+if sys.version_info[0] < 3:
+    import cPickle
+else:
+    import pickle as cPickle
 
 class DataObj:
     def __init__(self, name, labelDict, dataDict, size):

@@ -6,7 +6,6 @@ import math
 import random
 
 import inspect
-import cPickle
 
 import numpy as np 
 import distributions as dists
@@ -20,6 +19,11 @@ from survey import Survey
 import scipy.stats as stats
 
 from progressbar import ProgressBar
+
+if sys.version_info[0] < 3:
+    import cPickle
+else:
+    import pickle as cPickle
 
 class PopulateException(Exception):
     pass
@@ -39,17 +43,20 @@ def generate(ngen,
              zscale=0.33,
              duty_percent=6.,
              scindex=-3.86,
-             gpsArgs=[None, None],
-             doubleSpec=[None, None],
+             gpsArgs=[-1, -1],
+             doubleSpec=[-1, -1],
              nostdout=False,
              pattern='gaussian',
              orbits=False,
              dgf=None,
              singlepulse=False,
+             giantpulse=False,
              dither=False,
              accelsearch=False,
              jerksearch=False,
              sig_factor=10.0,
+             bns = False,
+             orbparams = {'m': [1, 5], 'm1': [1.0, 2.4], 'm2': [0.2, 1e9], 'om': [0, 360.], 'inc': [0, 90], 'ec': [0., 1.], 'pod': [1e-3, 1e3]},
              brDistType='log_unif'):
 
     """
@@ -76,38 +83,38 @@ def generate(ngen,
     
     # check that the distribution types are supported....
     if 'd_g' in (pDistType,lumDistType,zscaleType,radialDistType,brDistType) and dgf is None:
-        print "Provide the distribution generation file"
+        print("Provide the distribution generation file")
         sys.exit()
     elif dgf != None:
         try:
             f = open(dgf, 'rb')
         except IOError:
-            print "Could not open file {0}.".format(dgf)
+            print("Could not open file {0}.".format(dgf))
             sys.exit()
         dgf_pop_load = cPickle.load(f)
         f.close()
     
     if lumDistType not in ['lnorm', 'pow', 'log_unif', 'd_g', 'log_st']:
-        print "Unsupported luminosity distribution: {0}".format(lumDistType)
+        print("Unsupported luminosity distribution: {0}".format(lumDistType))
 
     if brDistType not in ['log_unif', 'd_g']:
-        print "Unsupported burst rate distribution: {0}".format(brDistType)
+        print("Unsupported burst rate distribution: {0}".format(brDistType))
 
     if pDistType not in ['lnorm', 'norm', 'cc97', 'lorimer12','unif', 'd_g']:
-        print "Unsupported period distribution: {0}".format(pDistType)
+        print("Unsupported period distribution: {0}".format(pDistType))
     
     if radialDistType not in ['lfl06', 'yk04', 'isotropic',
                               'slab', 'disk','unif' ,'gauss','d_g', 'gamma']:
-        print "Unsupported radial distribution: {0}".format(radialDistType)
+        print("Unsupported radial distribution: {0}".format(radialDistType))
 
     if electronModel not in ['ne2001', 'lmt85','ymw16']:
-        print "Unsupported electron model: {0}".format(electronModel)
+        print("Unsupported electron model: {0}".format(electronModel))
 
     if pattern not in ['gaussian', 'airy']:
-        print "Unsupported gain pattern: {0}".format(pattern)
+        print("Unsupported gain pattern: {0}".format(pattern))
 
     if duty_percent < 0.:
-        print "Unsupported value of duty cycle: {0}".format(duty_percent)
+        print("Unsupported value of duty cycle: {0}".format(duty_percent))
 
     # need to use properties in this class so they're get/set-type props
     pop.pDistType = pDistType
@@ -121,6 +128,10 @@ def generate(ngen,
 
     pop.gpsFrac, pop.gpsA = gpsArgs
     pop.brokenFrac, pop.brokenSI = doubleSpec
+    
+    #Set whether system is BNS:
+    pop.bns = bns
+    pop.orbparams = orbparams
 
     if pop.lumDistType == 'lnorm':
         pop.lummean, pop.lumsigma = \
@@ -148,14 +159,19 @@ def generate(ngen,
 
     # store the dict of arguments inside the model. Could be useful.
     try:
-        argspec = inspect.getargspec(generate)
-        key_values = [(arg, locals()[arg]) for arg in argspec.args]
+        if sys.version_info[0] > 3:
+            argspec = inspect.getfullargspec(generate)
+        else:
+            argspec = inspect.getargspec(generate)
+        lcl = locals()
+        key_values = [(arg, lcl[arg]) for arg in argspec.args]
+        #key_values = [(arg, locals()['argspec'][arg]) for arg in argspec.args]
         #pop.arguments = {key: value for (key, value) in key_values}
     except SyntaxError:
         pass
 
     if not nostdout:
-        print "\tGenerating pulsars with parameters:"
+        print("\tGenerating pulsars with parameters:")
         param_string_list = []
         for key, value in key_values:
             s = ": ".join([key, str(value)])
@@ -163,7 +179,7 @@ def generate(ngen,
 
         # join this list of strings, and print it
         s = "\n\t\t".join(param_string_list)
-        print "\t\t{0}".format(s)
+        print("\t\t{0}".format(s))
 
         # set up progress bar for fun :)
         prog = ProgressBar(min_value=0,
@@ -187,7 +203,6 @@ def generate(ngen,
         # make an empty list here - makes some code just a little
         # simpler - can still loop over an empty list (ie zero times)
         surveys = []
-
     while pop.ndet < ngen:
         # Declare new pulsar object
         p = Pulsar()
@@ -203,7 +218,7 @@ def generate(ngen,
         elif pop.pDistType == 'cc97':
             p.period = _cc97()
         elif pop.pDistType == 'gamma':
-            print "Gamma function not yet supported"
+            print("Gamma function not yet supported")
             sys.exit()
         elif pop.pDistType == 'd_g':
             Pbin_num=dists.draw1d(dgf_pop_load['pHist'])
@@ -230,7 +245,6 @@ def generate(ngen,
                     A1=random.gauss(0.49986684,0.13035004)
                     A2=random.gauss(-0.77626305,0.4222085)
                     width = 10**(A1*math.log10(p.period)+ A2)
-
             p.width_degree = width*360./p.period
         else:
             # use the model to caculate if beaming
@@ -251,7 +265,7 @@ def generate(ngen,
         # AND double spectra. But for now I assume only have one or
         # none of these types.
         if random.random() > pop.gpsFrac:
-            # This will evaluate true when gpsArgs[0] is NoneType
+            # This will evaluate true when gpsArgs[0] is -1
             # might have to change in future
             p.gpsFlag = 0
         else:
@@ -278,6 +292,7 @@ def generate(ngen,
             # use gl and gb to compute galactic coordinates
             # pretend the pulsar is at distance of 1kpc
             # not sure why, ask Dunc!
+            #Adam comment ,1 Kpc makes no sense here...
             p.galCoords = go.lb_to_xyz(p.gl, p.gb, 1.0)
 
         elif pop.radialDistType == 'slab':
@@ -362,11 +377,32 @@ def generate(ngen,
             logl = lmin + (lmax-lmin)*(lbin_num+random.random())/len(dgf_pop_load['lHist'])
             p.lum_1400 = 10.0**logl
         p.lum_inj_mu=p.lum_1400
-
+        
         # add in orbital parameters
-        if orbits:
-            orbitalparams.test_1802_2124(p)
-            print p.gb, p.gl
+        if pop.bns:
+            
+            assert isinstance(orbparams, dict), "Orbital parameter distribution limits should be a dictionary of form {'name of orb_param': [min, max]}"
+            
+            #These represents the range in which NN was trained. 
+            #DO NOT GO OUTSIDE THESE BOUNDS!!
+            default_orbparams = {'m': [1, 5], 'm1': [1.0, 2.4], 'm2': [0.2, 1e9], 'om': [0, 360.], 'inc': [0, 90], 'ec': [0., 1.], 'pod': [1e-3, 1e3]}
+            
+            if len(pop.orbparams) == 0: 
+                print("Warning: Supplied orbparams dict is empty; Setting ranges to default")
+                pop.orbparams = default_orbparams
+            else:
+                temp_opd = dict(default_orbparams)
+                temp_opd.update(orbparams)
+                pop.orbparams = temp_opd
+            
+            #Draw a value for each of the orbital parameters from a uniform distribution
+            p.m = np.int(np.random.uniform(pop.orbparams['m'][0], pop.orbparams['m'][1], size = 1)) #Should typically fix this to one value!
+            p.m1 = np.random.uniform(pop.orbparams['m1'][0], pop.orbparams['m1'][1], size = 1)
+            p.m2 = np.random.uniform(pop.orbparams['m2'][0], pop.orbparams['m2'][1], size = 1)
+            p.om = np.random.uniform(pop.orbparams['om'][0], pop.orbparams['om'][1], size = 1)
+            p.inc = np.random.uniform(pop.orbparams['inc'][0], pop.orbparams['inc'][1], size = 1)
+            p.ec = np.random.uniform(pop.orbparams['ec'][0], pop.orbparams['ec'][1], size = 1)
+            p.pod = np.random.uniform(pop.orbparams['pod'][0], pop.orbparams['pod'][1], size = 1)
         
         #dither the distance
         if dither:
@@ -415,7 +451,7 @@ def generate(ngen,
             pop.ndet += 1
             if not nostdout:
                 prog.increment_amount()
-                print prog, '\r',
+                print(prog, '\r',)
                 sys.stdout.flush()
         # if surveys are given, check if pulsar detected or not
         # in ANY of the surveys
@@ -474,24 +510,24 @@ def generate(ngen,
                 pop.ndet += 1
                 if not nostdout:
                     prog.increment_amount()
-                    print prog, '\r',
+                    print(prog, '\r',)
                     sys.stdout.flush()
 
     # print info to stdout
     if not nostdout:
-        print "\n"
-        print "  Total pulsars = {0}".format(len(pop.population))
-        print "  Total detected = {0}".format(pop.ndet)
+        print("\n")
+        print("  Total pulsars = {0}".format(len(pop.population)))
+        print("  Total detected = {0}".format(pop.ndet))
         # print "  Number not beaming = {0}".format(surv.nnb)
 
         for surv in surveys:
-            print "\n  Results for survey '{0}'".format(surv.surveyName)
-            print "    Number detected = {0}".format(surv.ndet)
-            print "    Number too faint = {0}".format(surv.ntf)
-            print "    Number smeared = {0}".format(surv.nsmear)
-            print "    Number outside survey area = {0}".format(surv.nout)
+            print("\n  Results for survey '{0}'".format(surv.surveyName))
+            print("    Number detected = {0}".format(surv.ndet))
+            print("    Number too faint = {0}".format(surv.ntf))
+            print("    Number smeared = {0}".format(surv.nsmear))
+            print("    Number outside survey area = {0}".format(surv.nout))
             if singlepulse:
-                print "    Number didn't burst =  {0}".format(surv.nbr)
+                print("    Number didn't burst =  {0}".format(surv.nbr))
 
     return pop
 
@@ -543,8 +579,9 @@ def _beaming(psr):
 
 def _burst():
     #number of times it pops up during the survey
-    burst_rate=(10.0**dists.uniform(-0.5,3))/3600.0
-    #print pop_time
+    #ADAM EDIT ORIGINALL -0.5, can't have log of negative number
+    #Adam second edit : alright have power in the distributions.py file
+    burst_rate=(dists.uniform(0.1,3))/3600.0
     return(burst_rate)
 
 
@@ -676,12 +713,12 @@ if __name__ == '__main__':
 
     # GPS sources
     parser.add_argument('-gps', type=float, nargs=2, required=False,
-                        default=[None, None],
+                        default=[-1, -1],
                         help='GPS fraction and "a" value')
 
     # double-spectral-index sources
     parser.add_argument('-doublespec', type=float, nargs=2, required=False,
-                        default=[None, None],
+                        default=[-1, -1],
                         help='Dbl spec fraction and alpha value')
     # dist_gen_file
     parser.add_argument('-dgf', type=str,metavar='dist_gen_file', required= False,

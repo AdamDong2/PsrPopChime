@@ -33,10 +33,21 @@ class Pulsar(Orbit):
                  t_scatter=None,
                  gpsFlag=0,
                  gpsA=None,
+                 giant_pulse=None,
                  brokenFlag=0,
                  brokenSI=None,
                  br=None,
                  det_nos=None,
+                 m = 1, # "n"th harmonic; required for orb_degfac calculation
+                 m1 = 1.4, #Mass of psr; required for orb_degfac calculation
+                 m2 = 1.4, #Mass of companion; required for orb_degfac calculation
+                 om = 90., #angle of periastron passage (omega_per); required for orb_degfac calculation
+                 inc = 90., #inclincation of bns system; required for orb_degfac calculation
+                 ec = 0.01, #eccentricity of bns system; required for orb_degfac calculation
+                 pod = 0.1, #orbital period of bns system; required for orb_degfac calculation
+                 orb_degfac = 1.0,  #Add in orbital degradation factor for each pulsar
+                 gain=None,
+                 tobs=None,
                  *args,
                  **kwargs):
         """___init___ function for the Pulsar class"""
@@ -49,8 +60,9 @@ class Pulsar(Orbit):
         self.dm = dm
 
         # convert to -180->+180 range
-        if gl > 180.:
-            gl -= 360.
+        if gl:
+            if gl > 180.:
+                gl -= 360.
 
         self.gl = gl
         self.gb = gb
@@ -90,7 +102,21 @@ class Pulsar(Orbit):
 
         # need to add pulsar dead/alive for evolution code
         self.dead = False
-
+        
+        #Set the orbital parameters:
+        self.m = m
+        self.m1 = m1
+        self.m2 = m2
+        self.om = om
+        self.inc = inc
+        self.ec = ec
+        self.pod = pod
+        
+        #Set the orbital degradation factor:
+        self.orb_degfac = orb_degfac
+        self.gain = gain
+        self.tobs=tobs
+        self.giant_pulse = giant_pulse
     # methods to calculate derived properties
     def s_1400(self):
         """Calculate the flux of the pulsar"""

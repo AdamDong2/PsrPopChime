@@ -33,7 +33,7 @@ def plot_these(x,y,fit=False,func=None,p0=None,label1=None,label2=None,show=True
 
             #print injeted mu, recovered mu, err mu and sigma
             if print_res is True:
-                print p0[1],par3[1],err3[1],p0[2],par3[2],err3[2]
+                print(p0[1],par3[1],err3[1],p0[2],par3[2],err3[2])
         except RuntimeError:
             pass
     plt.xlabel("Luminosity")
