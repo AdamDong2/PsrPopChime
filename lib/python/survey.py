@@ -377,6 +377,8 @@ class Survey:
     def SNRcalc(self,
                 pulsar,
                 pop,
+                alpha,
+                sig,
                 accelsearch=False,
                 jerksearch=False,
                 rratssearch=False,
@@ -392,8 +394,8 @@ class Survey:
                 print("Population doesn't have a burst rate")
                 print("Use populate with --singlepulse")
                 sys.exit()
-            pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
-
+            #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
+            pulsar.pop_time = self.tobs/(pulsar.br*pulsar.period)
         if pulsar.dead:
             return 0.
 
@@ -510,12 +512,14 @@ class Survey:
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
                 lums=[]
-                mu=math.log10(pulsar.lum_inj_mu)
-                sig=mu/pulsar.lum_sig
+                L_min = pulsar.lum_inj_mu*(alpha-2)/(alpha-1)
+                L_max = pulsar.lum_inj_mu*1000
+                #mu=math.log10(pulsar.lum_inj_mu)
+                #sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
                 #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
                 for burst_times in range(pulsar.pop_time):
-                    pulsar.lum_1400=dist.drawlnorm(mu,sig)
+                    pulsar.lum_1400=dist.powerlaw(L_min,L_max,alpha)
                     lums.append(pulsar.lum_1400)
                     flux=self.calcflux(pulsar, pop.ref_freq)
                     fluxes[burst_times]=flux
