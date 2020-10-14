@@ -83,9 +83,9 @@ def write(surveyPops,
 
 def run(pop,
         surveyList,
-        alpha,
-        br_mu,
-        br_sigma,
+        alpha=0,
+        br_mu=0,
+        br_sigma=0,
         nostdout=False,
         allsurveyfile=False,
         scint=False,
@@ -122,18 +122,19 @@ def run(pop,
         # loop over the pulsars in the population list
         for psr in pop.population:
             # pulsar could be dead (evolve!) - continue if so
+            #print('hi')
             if psr.dead:
                 continue
-            #draw burst rate
-            psr.br = distributions.drawlnorm(br_mu,br_sigma) 
-            #ADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
+            #re-draw burst rate
+            psr.br = distributions.drawlnorm(br_mu,br_sigma)
+            #nADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
             if s.surveyName == 'CHIME':
                 s.gain = calc_gain(psr)
                 s.tobs = s.dos*calc_tobs(psr)
                 psr.gain = s.gain
                 psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
-            snr = s.SNRcalc(psr, pop,alpha,accelsearch,jerksearch,rratssearch,giantpulse)
+            snr = s.SNRcalc(psr, pop,alpha,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse)
             
             #print snr
             # add scintillation, if required

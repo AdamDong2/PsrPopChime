@@ -377,8 +377,7 @@ class Survey:
     def SNRcalc(self,
                 pulsar,
                 pop,
-                alpha,
-                sig,
+                alpha=0,
                 accelsearch=False,
                 jerksearch=False,
                 rratssearch=False,
@@ -395,7 +394,8 @@ class Survey:
                 print("Use populate with --singlepulse")
                 sys.exit()
             #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
-            pulsar.pop_time = self.tobs/(pulsar.br*pulsar.period)
+            #print(pulsar.br)
+            pulsar.pop_time = int(self.tobs/(pulsar.br*pulsar.period))
         if pulsar.dead:
             return 0.
 
