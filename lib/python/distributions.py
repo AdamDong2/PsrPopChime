@@ -9,12 +9,13 @@ import random
 import numpy as np
 def drawhalflnorm(mean,sigma,size=1):
     dist = np.random.normal(mean, sigma,(size))
-    #redraw these
+    #redraw these 
     ind = np.argwhere(dist<0)
     for my_indices in ind:
-        val = np.random.normal(mean,sigma)
-        if val>0:
-            dist[my_indices]=val
+        val=-1
+        while val<0:
+            val = np.random.normal(mean,sigma)
+        dist[my_indices]=val
     return 10**dist
 
 def drawlnorm(mean, sigma,size=1):

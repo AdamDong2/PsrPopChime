@@ -19,16 +19,15 @@ def grid_search():
                 params = {'alpha':alpha_arr[i],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':125}
                 param_dict.append(params)
     #for loop over everything
-        
+    '''        
     with Pool(40) as p:
         ndets_error=np.array(p.map(sample_point,param_dict))
+    '''
     np.save('errors',(ndets_error,alpha_arr,br_mu,br_sigma))
-    
-    ''' 
+     
     ndets_error=[]
     for params in param_dict:
         ndets_error.append(sample_point(params))
-    '''    
 def plotting():
     ndets_error,alpha_arr,br_mu,br_sigma = np.load('grid_searchnpys/errors_5.npy',allow_pickle=1)
     print(ndets_error[0:500])
