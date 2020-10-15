@@ -120,13 +120,21 @@ def run(pop,
         ndet = 0
         nbr = 0
         # loop over the pulsars in the population list
-        for psr in pop.population:
+        br = distributions.drawhalflnorm(br_mu,br_sigma,len(pop.population))
+        
+        import matplotlib.pyplot as plt
+        print(br_mu)
+        print(br_sigma)
+        plt.hist(br,bins=100)
+        plt.show()
+        
+        for i,psr in enumerate(pop.population):
             # pulsar could be dead (evolve!) - continue if so
             #print('hi')
             if psr.dead:
                 continue
-            #re-draw burst rate
-            psr.br = distributions.drawlnorm(br_mu,br_sigma)
+            #draw burst rate
+            psr.br = br[i]
             #nADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
             if s.surveyName == 'CHIME':
                 s.gain = calc_gain(psr)

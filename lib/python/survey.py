@@ -396,6 +396,12 @@ class Survey:
             #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
             #print(pulsar.br)
             pulsar.pop_time = int(self.tobs/(pulsar.br*pulsar.period))
+            if pulsar.pop_time>1e6:
+                print('more than one million bursts.... reducing to 1e5')
+                pulsar.pop_time=int(1e5)
+                
+                #print(pulsar.br)
+                #print(pulsar.period)
         if pulsar.dead:
             return 0.
 
@@ -511,21 +517,28 @@ class Survey:
             if pulsar.pop_time >= 1.0:
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
-                lums=[]
-                L_min = pulsar.lum_inj_mu*(alpha-2)/(alpha-1)
-                L_max = pulsar.lum_inj_mu*1000
+                L_min = pulsar.lum_inj_mu*(-alpha-2)/(-alpha-1)
+                L_max = pulsar.lum_inj_mu*100
                 #mu=math.log10(pulsar.lum_inj_mu)
                 #sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
                 #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
-                for burst_times in range(pulsar.pop_time):
-                    pulsar.lum_1400=dist.powerlaw(L_min,L_max,alpha)
-                    lums.append(pulsar.lum_1400)
-                    flux=self.calcflux(pulsar, pop.ref_freq)
-                    fluxes[burst_times]=flux
-                    #ADAM EDIT: width changed to seconds instead of miliseconds???
-                    pulse_snr[burst_times] = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
-                pulsar.lum_1400=np.max(lums)
+                pulsar.lum_1400=dist.powerlaw(alpha,L_min,L_max,pulsar.pop_time)
+                '''
+                import matplotlib.pyplot as plt
+                plt.hist(pulsar.lum_1400,bins=1000)
+                print(L_max)
+                print(L_min)
+                plt.xscale('log')
+                plt.yscale('log')
+                print(pulsar.lum_inj_mu)
+                print(alpha)
+                plt.show()
+                '''
+                fluxes=self.calcflux(pulsar, pop.ref_freq)
+                #ADAM EDIT: width changed to seconds instead of miliseconds???
+                pulse_snr = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes,self.beta)
+                pulsar.lum_1400=np.max(pulsar.lum_1400)
                 sig_to_noise = np.max(pulse_snr)
                 if sig_to_noise >= self.SNRlimit:
                     pulsar.det_pulses=fluxes[pulse_snr >= self.SNRlimit]
@@ -578,7 +591,7 @@ class Survey:
 
         # return the S/N accounting for beam offset
         
-        return sig_to_noise * degfac
+        return sig_to_noise/2 * degfac
 
     def _AA_factor(self, pulsar):
         """ Aperture array factor """

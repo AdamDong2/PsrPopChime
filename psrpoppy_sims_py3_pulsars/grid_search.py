@@ -61,5 +61,5 @@ def plotting():
     ax.set_zlabel('br_sig min')
     plt.show()
 
-#grid_search()
+grid_search()
 plotting()

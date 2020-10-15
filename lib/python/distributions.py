@@ -7,12 +7,34 @@ import sys
 import math
 import random
 import numpy as np
+def drawhalflnorm(mean,sigma,size=1):
+    dist = np.random.normal(mean, sigma,(size))
+    #redraw these
+    ind = np.argwhere(dist<0)
+    for my_indices in ind:
+        val = np.random.normal(mean,sigma)
+        if val>0:
+            dist[my_indices]=val
+    return 10**dist
 
-def drawlnorm(mean, sigma):
+def drawlnorm(mean, sigma,size=1):
     """Draw a random number from a log-normal distribution"""
 
-    return 10.0**random.gauss(mean, sigma)
+    return 10.0**np.random.normal(mean, sigma,(size))
 
+def powerlaw(alpha,xmin,xmax,size=1):
+    cdf = np.random.rand(size)
+    logx=np.log10(cdf*(xmax**(alpha+1)-xmin**(alpha+1))+xmin**(alpha+1))/(alpha+1)
+    x=10**logx
+    #x = xmin*(10**(np.log10(cdf)/(alpha+1)))
+    return x
+
+def powerlawnp(alpha,xmax,xmin,size=1):
+    '''draw a random number from power law distribution'''
+    #we need to modify the alpha parameter because the default power is alpha-1
+    power = -1*alpha + 1
+    return_val = (xmax-xmin)*(-np.random.power(power,(size))+1)+xmin
+    return return_val
 
 def power_law_dual(xmin,xmax,xtransition,nbreak,power1,power2):
     logmin = math.log10(xmin)
@@ -31,7 +53,9 @@ def power_law_dual(xmin,xmax,xtransition,nbreak,power1,power2):
         x = 10**((math.log10(samplen)-c2)/power2)
     return x
 
-def powerlaw(minval, maxval, power):
+
+
+def power_law_orig(minval, maxval, power):
     """Draw a value randomly from the specified power law"""
 
     logmin = math.log10(minval)
@@ -50,7 +74,17 @@ def powerlaw(minval, maxval, power):
 
     return 10.0**log
 
-
+'''
+def power_law_dual(xmin,xmax,power):
+    logmin = math.log10(xmin)
+    logmax= math.log10(xmax)
+    c =power*math.log10(xmin) 
+    nmax = 10.0**(power*logmin)
+    #using inverse sampling methods
+    samplen=random.random()*nmax
+    x = 10**((math.log10(samplen)-c)/power)
+    return x
+'''
 def draw1d(dist):
     """Draw a bin number form a home-made distribution
         (dist is a list of numbers per bin)
