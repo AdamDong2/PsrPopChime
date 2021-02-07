@@ -7,21 +7,60 @@ import sys
 import math
 import random
 import numpy as np
-def drawhalflnorm(mean,sigma,size=1):
+import powerlaw as pl
+
+import matplotlib.pyplot as plt
+def plot_loghist(x, bins):
+    hist, bins = np.histogram(x, bins=bins)
+    #logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
+    plt.hist(x, bins=1000,cumulative=False)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.figure()
+    plt.hist(x, bins=1000,cumulative=-1)
+    plt.xscale('log')
+    plt.yscale('log')
+
+def augmenteddrawlnorm(mean,sigma,size=1):
     dist = np.random.normal(mean, sigma,(size))
     #redraw these 
     ind = np.argwhere(dist<0)
+
+    
     for my_indices in ind:
         val=-1
         while val<0:
             val = np.random.normal(mean,sigma)
         dist[my_indices]=val
-    return 10**dist
+    #print('done with br draw')
+    return (10**dist)
 
 def drawlnorm(mean, sigma,size=1):
     """Draw a random number from a log-normal distribution"""
+    #return 10**random.gauss(mean,sigma)
+    return 10.0**random.gauss(mean, sigma)
 
-    return 10.0**np.random.normal(mean, sigma,(size))
+def powerlaw_nomax(alpha,xmin,size=1):
+    #alpha=alpha-1
+    cdf = np.random.rand(size)
+    #logx=np.log10(cdf*(-xmin**(alpha+1))/(alpha+1))/alpha
+    x=pl.Power_Law(xmin=xmin,parameters=[-alpha]).generate_random(size)
+    #x=10**logx
+    #x = xmin*(10**(np.log10(cdf)/(alpha+1)))
+    ''' 
+    print(alpha) 
+    import matplotlib.pyplot as plt
+    plot_loghist(x,bins=1000)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.title('alpha=-2')
+    plt.xlabel('Lum')
+    plt.ylabel('number')
+    plt.show()
+    '''
+
+    return x
+
 
 def powerlaw(alpha,xmin,xmax,size=1):
     cdf = np.random.rand(size)

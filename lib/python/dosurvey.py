@@ -120,14 +120,28 @@ def run(pop,
         ndet = 0
         nbr = 0
         # loop over the pulsars in the population list
-        br = distributions.drawhalflnorm(br_mu,br_sigma,len(pop.population))
-        
+        br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))
+        '''
+        import distributions as dist
         import matplotlib.pyplot as plt
+        import numpy as np
         print(br_mu)
         print(br_sigma)
-        plt.hist(br,bins=100)
+        print(np.min(br))
+        dist.plot_loghist(br,100)
+        plt.title('interburst rate '+ r'$\mu_{IBR}$='+str(br_mu)+r' $\sigma$='+str(br_sigma))
+        plt.xlabel('Interburst rate (periods)')
+        plt.ylabel('Number')
+        #plt.xlim([0,5])
         plt.show()
-        
+        '''
+        '''
+        import matplotlib.pyplot as plt
+        lum = list(psr.lum_inj_mu for psr in pop.population)
+        import distributions as dist
+        dist.plot_loghist(lum,1000)
+        plt.show()
+        '''
         for i,psr in enumerate(pop.population):
             # pulsar could be dead (evolve!) - continue if so
             #print('hi')

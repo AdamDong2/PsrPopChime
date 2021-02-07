@@ -377,11 +377,11 @@ class Survey:
     def SNRcalc(self,
                 pulsar,
                 pop,
-                alpha=0,
                 accelsearch=False,
                 jerksearch=False,
                 rratssearch=False,
-                giantpulse=False):
+                giantpulse=False,
+                min_ndet=1):
         """Calculate the S/N ratio of a given pulsar in the survey"""
         # if not in region, S/N = 0
 
@@ -517,30 +517,48 @@ class Survey:
             if pulsar.pop_time >= 1.0:
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
-                L_min = pulsar.lum_inj_mu*(-alpha-2)/(-alpha-1)
-                L_max = pulsar.lum_inj_mu*100
+                '''
+                a=100
+                L_min = pulsar.lum_inj_mu*((a**alpha2-1)/(a**alpha1-1))*((alpha2)/(alpha1))
+                L_max = L_min*a
+                '''
+                L_min = pulsar.lum_inj_mu*((pulsar.alpha+2)/(pulsar.alpha+1))
                 #mu=math.log10(pulsar.lum_inj_mu)
                 #sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
                 #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
-                pulsar.lum_1400=dist.powerlaw(alpha,L_min,L_max,pulsar.pop_time)
+                #pulsar.pop_time=int(1e6)
+
+                #pulsar.lum_1400=dist.powerlaw(alpha,L_min,L_max,pulsar.pop_time)
+                pulsar.lum_1400=dist.powerlaw_nomax(pulsar.alpha,L_min,pulsar.pop_time)
                 '''
+                print(alpha)
+                print(np.mean(pulsar.lum_1400))
+                print(pulsar.lum_inj_mu)
+                
+                print('average lum') 
                 import matplotlib.pyplot as plt
-                plt.hist(pulsar.lum_1400,bins=1000)
-                print(L_max)
-                print(L_min)
+                dist.plot_loghist(pulsar.lum_1400,bins=1000)
+                #print(L_max)
+                plt.xlabel(r'Luminosities mJy $kpc^2$')
+                plt.ylabel('Number')
+                plt.title('Single Pulse Luminosities '+r'$\alpha=$'+str(alpha))
                 plt.xscale('log')
                 plt.yscale('log')
-                print(pulsar.lum_inj_mu)
-                print(alpha)
                 plt.show()
                 '''
+                    
+
                 fluxes=self.calcflux(pulsar, pop.ref_freq)
                 #ADAM EDIT: width changed to seconds instead of miliseconds???
-                pulse_snr = rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes,self.beta)
+                pulse_snr = degfac* rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes,self.beta)
                 pulsar.lum_1400=np.max(pulsar.lum_1400)
+
                 sig_to_noise = np.max(pulse_snr)
-                if sig_to_noise >= self.SNRlimit:
+                detected_bursts = np.sum(pulse_snr>=self.SNRlimit)
+                #print(detected_bursts)
+                if detected_bursts>=min_ndet:
+
                     pulsar.det_pulses=fluxes[pulse_snr >= self.SNRlimit]
                     pulsar.det_nos=len(pulsar.det_pulses)
                 else:
@@ -591,7 +609,7 @@ class Survey:
 
         # return the S/N accounting for beam offset
         
-        return sig_to_noise/2 * degfac
+        return sig_to_noise * degfac
 
     def _AA_factor(self, pulsar):
         """ Aperture array factor """
