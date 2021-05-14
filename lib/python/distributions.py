@@ -8,7 +8,6 @@ import math
 import random
 import numpy as np
 import powerlaw as pl
-
 import matplotlib.pyplot as plt
 def plot_loghist(x, bins):
     hist, bins = np.histogram(x, bins=bins)

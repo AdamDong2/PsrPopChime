@@ -39,6 +39,7 @@ def generate(ngen,
              siDistPars=[-1.6, 0.35],
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
+             brPars=[5,5],
              zscaleType='exp',
              zscale=0.33,
              duty_percent=6.,
@@ -577,13 +578,13 @@ def _beaming(psr):
     # compare beamfrac vs a random number
     return random.random() < beamfrac
 
-def _burst(rratsearch=False,pop_number=1,br_mu=0,br_sigma=0):
+def _burst(br=[0,0],pop_num=1):
     #number of times it pops up during the survey
     #ADAM EDIT ORIGINALL -0.5, can't have log of negative number
     #Adam second edit : alright have power in the distributions.py file
     burst_rate=(dists.uniform(0.1,3))/3600.0
-    if rratsearch:
-        burst_rate = dists.augmenteddrawlnorm(br_mu,br_sigma,pop_number)
+    if  pop_num:
+        burst_rate = dists.augmenteddrawlnorm(br[0],br[1],pop_num)
 
     return(burst_rate)
 

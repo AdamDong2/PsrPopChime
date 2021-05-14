@@ -120,8 +120,10 @@ def run(pop,
         ndet = 0
         nbr = 0
         # loop over the pulsars in the population list
-        br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))
+        if rratssearch:
+            br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))
         '''
+        #plot burst rates
         import distributions as dist
         import matplotlib.pyplot as plt
         import numpy as np
@@ -156,7 +158,7 @@ def run(pop,
                 psr.gain = s.gain
                 psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
-            snr = s.SNRcalc(psr, pop,alpha,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse)
+            snr = s.SNRcalc(psr,pop,alpha,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse)
             
             #print snr
             # add scintillation, if required

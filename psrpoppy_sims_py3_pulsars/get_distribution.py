@@ -1,5 +1,5 @@
 import sys
-sys.path.append('/home/adam/anaconda3/envs/CHIME/lib/python3.6/psrpoppy')
+sys.path.append('/home/adam/Documents/PSRPOPPY/PsrPopChime/lib/python')
 from psrpoppy import populate,dosurvey
 from matplotlib import pyplot as plt
 import numpy as np
