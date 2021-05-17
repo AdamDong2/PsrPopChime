@@ -580,7 +580,7 @@ def _beaming(psr):
 
 def _burst(br=[0,0],pop_num=1):
     #number of times it pops up during the survey
-    #ADAM EDIT ORIGINALL -0.5, can't have log of negative number
+    #ADAM EDIT ORIGINAL -0.5, can't have log of negative number
     #Adam second edit : alright have power in the distributions.py file
     burst_rate=(dists.uniform(0.1,3))/3600.0
     if  pop_num:

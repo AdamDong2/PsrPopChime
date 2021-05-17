@@ -395,7 +395,8 @@ class Survey:
                 sys.exit()
             #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
             #print(pulsar.br)
-            pulsar.pop_time = int(self.tobs/(pulsar.br*pulsar.period))
+            #change to bursts/hour
+            pulsar.pop_time = int(self.tobs/pulsar.br)
             if pulsar.pop_time>1e6:
                 print('more than one million bursts.... reducing to 1e5')
                 pulsar.pop_time=int(1e5)
