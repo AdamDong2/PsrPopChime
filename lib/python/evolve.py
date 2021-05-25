@@ -442,7 +442,7 @@ def alignpulsar(pulsar, pop):
 
     elif pop.alignModel == 'random':
         chi = math.acos(random.random())  # in radians
-
+        ### I'm not sure this chi is correct... why isn't it in radians
         pulsar.chi = math.degrees(chi)  # -> degrees
         pulsar.sinchi_init = math.sin(chi)
         pulsar.sinchi = pulsar.sinchi_init

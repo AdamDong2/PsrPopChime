@@ -10,15 +10,11 @@ import numpy as np
 import powerlaw as pl
 import matplotlib.pyplot as plt
 def plot_loghist(x, bins):
-    hist, bins = np.histogram(x, bins=bins)
+    #hist, bins = np.histogram(x, bins=bins)
     #logbins = np.logspace(np.log10(bins[0]),np.log10(bins[-1]),len(bins))
-    plt.hist(x, bins=1000,cumulative=False)
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.figure()
-    plt.hist(x, bins=1000,cumulative=-1)
-    plt.xscale('log')
-    plt.yscale('log')
+    plt.hist(x, bins=bins,cumulative=False)
+#    plt.xscale('log')
+    #plt.yscale('log')
 
 def augmenteddrawlnorm(mean,sigma,size=1):
     dist = np.random.normal(mean, sigma,(size))
@@ -37,7 +33,12 @@ def augmenteddrawlnorm(mean,sigma,size=1):
 def drawlnorm(mean, sigma,size=1):
     """Draw a random number from a log-normal distribution"""
     #return 10**random.gauss(mean,sigma)
-    return 10.0**random.gauss(mean, sigma)
+    return 10.0**np.random.normal(mean,sigma,size)
+
+def drawlnorm_e(mean, sigma,size=1):
+    """Draw a random number from a log-normal distribution"""
+    #return 10**random.gauss(mean,sigma)
+    return np.exp(np.random.normal(mean,sigma,size))
 
 def powerlaw_nomax(alpha,xmin,size=1):
     #alpha=alpha-1
@@ -57,7 +58,6 @@ def powerlaw_nomax(alpha,xmin,size=1):
     plt.ylabel('number')
     plt.show()
     '''
-
     return x
 
 

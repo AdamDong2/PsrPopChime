@@ -38,15 +38,22 @@ def calcSNR(flux,
             duty):
 
     """Calculate the S/N ratio assuming radiometer equation"""
-
-    signal = signalterm(beta,
-                        Trec,
-                        Tsky,
-                        gain,
-                        n_p,
-                        t_obs,
-                        bw,
-                        duty)
+    try:
+        signal = signalterm(beta,
+                            Trec,
+                            Tsky,
+                            gain,
+                            n_p,
+                            t_obs,
+                            bw,
+                            duty)
+    except:
+        print(n_p)
+        print(t_obs)
+        print(bw)
+        print(duty)
+        import sys
+        sys.exit(1)
 
     return flux / signal
 
@@ -71,3 +78,8 @@ def single_pulse_snr(n_p,bw,duty,T_sys,gain,S_max,beta):
     eta=0.868
     S_sys=T_sys/gain
     return(eta*math.sqrt(n_p*bw*duty)*S_max/(S_sys*beta))
+def single_pulse_flux(n_p,bw,duty,T_sys,gain,beta,snr):
+    eta=0.868
+    S_sys=T_sys/gain
+    return (snr/(eta*math.sqrt(n_p*bw*duty)/(S_sys*beta)))
+

@@ -377,11 +377,14 @@ class Survey:
     def SNRcalc(self,
                 pulsar,
                 pop,
+                beta_sp,
+                beta_sp_std,
                 accelsearch=False,
                 jerksearch=False,
                 rratssearch=False,
                 giantpulse=False,
-                min_ndet=1):
+                min_ndet=1,
+                rrat_distribution='lnorm'):
         """Calculate the S/N ratio of a given pulsar in the survey"""
         # if not in region, S/N = 0
 
@@ -396,13 +399,9 @@ class Survey:
             #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
             #print(pulsar.br)
             #change to bursts/hour
-            pulsar.pop_time = int(self.tobs/pulsar.br)
-            if pulsar.pop_time>1e6:
-                print('more than one million bursts.... reducing to 1e5')
-                pulsar.pop_time=int(1e5)
-                
-                #print(pulsar.br)
-                #print(pulsar.period)
+            pulsar.pop_time = int(self.tobs/(pulsar.br/1000))
+            
+        pulsar.period=pulsar.br 
         if pulsar.dead:
             return 0.
 
@@ -453,18 +452,18 @@ class Survey:
 
         # calculate duty cycle (period is in ms)
         delta = weff_ms / pulsar.period
-
         # if pulse is smeared out, return -1.0
         #don't really get smearing with giant pulse or rrat search right?
         if (delta > 1.0) & (not giantpulse) & (not rratssearch): #and pulsar.pop_time >= 1.0:
             # print width_ms, self.tsamp, tdm, tscat
             return -1
-
+        pulsar.S_max_dect = rad.single_pulse_flux(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,self.beta,self.SNRlimit/degfac)
+        #print(pulsar.S_max_dect)
         # radiometer signal to noise
         if (rratssearch==False) & (giantpulse==False):
             if self.surveyName=='CHIME':
                 #print('CHIME')
-                sig_to_noise=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,self.calcflux(pulsar, pop.ref_freq),self.beta)
+                sig_to_noise=rad.single_pulse_snr(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,self.calcflux(pulsar, pop.ref_freq)*1e-3,self.beta)
             else:
                 sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
                                            self.beta,
@@ -498,7 +497,7 @@ class Survey:
                         flux= self._GPFlux(pulsar,lum_1400,1400)
                         GP_lum[i]=lum_1400
                         GP_flux[i]=flux
-                        GP_snr[i]=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
+                        GP_snr[i]=rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,flux,self.beta)
                     pulsar.lum_1400 = np.max(GP_lum)
                     sig_to_noise = np.max(GP_snr)
                     if sig_to_noise >= self.SNRlimit:
@@ -516,47 +515,61 @@ class Survey:
             #pop_time=int(pulsar.br*self.tobs)
             #Need to optimise this code...
             if pulsar.pop_time >= 1.0:
+                if delta<1:
+                    sig_noise_f = degfac*rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
+                                               self.beta,
+                                               self.tsys,
+                                               self.tskypy(pulsar),
+                                               self.gain,
+                                               self.npol,
+                                               self.tobs,
+                                               self.bw,
+                                               delta)
+                else:
+                    sig_noise_f = None
                 pulse_snr=np.zeros(pulsar.pop_time)
                 fluxes=np.zeros(pulsar.pop_time)
-                '''
-                a=100
-                L_min = pulsar.lum_inj_mu*((a**alpha2-1)/(a**alpha1-1))*((alpha2)/(alpha1))
-                L_max = L_min*a
-                '''
-                L_min = pulsar.lum_inj_mu*((pulsar.alpha+2)/(pulsar.alpha+1))
-                #mu=math.log10(pulsar.lum_inj_mu)
-                #sig=mu/pulsar.lum_sig
                 # Draw from luminosity dist.
-                #ADAM EDIT it would be nice to make this run on multiple cores... chime has so much observation time
-                #pulsar.pop_time=int(1e6)
-
-                #pulsar.lum_1400=dist.powerlaw(alpha,L_min,L_max,pulsar.pop_time)
-                pulsar.lum_1400=dist.powerlaw_nomax(pulsar.alpha,L_min,pulsar.pop_time)
-                '''
-                print(alpha)
-                print(np.mean(pulsar.lum_1400))
-                print(pulsar.lum_inj_mu)
+                if rrat_distribution=='lnorm': 
+                    #this is if beta_sp is fixed for all pulsars - not physical
+                    #sigma_L=beta_sp
+                    #draw sigma_L from a distribution
+                    sigma_L=-1
+                    while sigma_L<0:
+                        #scale has to be positive, so it's a truncated normal distribution
+                        sigma_L=np.random.normal(beta_sp,beta_sp_std)
+                    #print('beta_sp:'+str(beta_sp)+' std:'+str(beta_sp_std)+' sigma_L: '+str(sigma_L))
+                    pulsar.lum_1400=dist.drawlnorm_e(np.log(pulsar.lum_inj_mu),sigma_L,pulsar.pop_time)
+                else:
+                    #if not a log normal distribution, use a power law
+                    #this might not be correct
+                    L_min = pulsar.lum_inj_mu*((beta_sp+2)/(beta_sp+1))
+                    pulsar.lum_1400=dist.powerlaw_nomax(beta_sp,L_min,pulsar.pop_time)
+                    #pulsar.lum_1400=dist.powerlaw(alpha,L_min,L_max,pulsar.pop_time)
+                plot_lum=0
+                if plot_lum:
+                    print(np.mean(pulsar.lum_1400))
+                    print(pulsar.lum_inj_mu) 
+                    print('average lum') 
+                    import matplotlib.pyplot as plt
+                    dist.plot_loghist(pulsar.lum_1400,bins=100)
+                    #print(L_max)
+                    plt.xlabel(r'Luminosities mJy $kpc^2$')
+                    plt.ylabel('Number')
+                    plt.title('Single Pulse Luminosities '+r'$\beta=$'+str(beta_sp))
+                    plt.show()
                 
-                print('average lum') 
-                import matplotlib.pyplot as plt
-                dist.plot_loghist(pulsar.lum_1400,bins=1000)
-                #print(L_max)
-                plt.xlabel(r'Luminosities mJy $kpc^2$')
-                plt.ylabel('Number')
-                plt.title('Single Pulse Luminosities '+r'$\alpha=$'+str(alpha))
-                plt.xscale('log')
-                plt.yscale('log')
-                plt.show()
-                '''
-                    
-
                 fluxes=self.calcflux(pulsar, pop.ref_freq)
                 #ADAM EDIT: width changed to seconds instead of miliseconds???
-                pulse_snr = degfac* rad.single_pulse_snr(self.npol,self.bw,weff_ms*1e3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes,self.beta)
+                pulse_snr = degfac* rad.single_pulse_snr(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes*1e-3,self.beta)
                 pulsar.lum_1400=np.max(pulsar.lum_1400)
 
                 sig_to_noise = np.max(pulse_snr)
+                if sig_noise_f is not None:
+                    pulsar.r=sig_to_noise/sig_noise_f
+                pulsar.fold_sn = sig_noise_f
                 detected_bursts = np.sum(pulse_snr>=self.SNRlimit)
+
                 #print(detected_bursts)
                 if detected_bursts>=min_ndet:
 

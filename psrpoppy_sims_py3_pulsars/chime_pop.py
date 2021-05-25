@@ -1,6 +1,6 @@
 import sys
-sys.path.append('/home/adam/anaconda3/envs/CHIME/lib/python3.8/psrpoppy')
-from psrpoppy import populate,dosurvey
+sys.path.append('/home/adam/Documents/PSRPOPPY/PsrPopChime/lib/python')
+import populate,dosurvey
 from matplotlib import pyplot as plt
 import numpy as np
 pop = populate.generate(112000,siDistPars=[-1, 2])

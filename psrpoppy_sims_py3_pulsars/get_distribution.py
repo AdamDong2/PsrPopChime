@@ -1,24 +1,28 @@
 import sys
 sys.path.append('/home/adam/Documents/PSRPOPPY/PsrPopChime/lib/python')
-from psrpoppy import populate,dosurvey
+import populate
+import dosurvey
 from matplotlib import pyplot as plt
 import numpy as np
 from scipy.stats import norm
 import theano.tensor as tt
 from theano.compile.ops import as_op
 from multiprocessing import Pool
-def dosurvey_wrapper(val):
+def dosurvey_wrapper(val,save_folder='pmsurv_sp/'):
     pop = val['pop']
     surveyList = val['surveyList']
-    alpha = val['alpha']
+    beta_sp = val['beta_sp']
+    beta_sp_std = val['beta_sp_std']
     br_mu = val['br_mu']
     br_sigma = val['br_sigma']
     rratssearch = val['rratssearch']
-    det= dosurvey.run(pop,surveyList=surveyList,alpha=alpha,br_mu=br_mu,br_sigma=br_sigma,rratssearch=True,nostdout=True)
-    return_obj = det[0][2].ndet
+    det= dosurvey.run(pop,surveyList=surveyList,beta_sp=beta_sp,beta_sp_std=beta_sp_std,br_mu=br_mu,br_sigma=br_sigma,rratssearch=rratssearch,nostdout=True)
+    save_str = save_folder+str(br_mu)+'_'+str(br_sigma)+'_'+str(beta_sp)+'_'+str(beta_sp_std)
+    np.save(save_str,det)
+    return_obj = det[0][3].ndet
     del det
     return return_obj
-
+'''
 global dist
 dist = 100
 pop = np.load('test',allow_pickle=1)
@@ -26,26 +30,31 @@ global pop_arr
 pop_arr = np.array([])
 for i in range(dist):
     pop_arr=np.append(pop_arr,np.copy(pop))
-
+'''
 def sample_point(val):
     #unwrap
-    pop = np.load('mu_m1_sig_2',allow_pickle=1)
+    pop = np.load('112_pop',allow_pickle=1)
     #pop = np.load('224000_pulsars',allow_pickle=1)
     surv=val['surv']
     average=val['avg']
-    alpha = val['alpha']
+    beta_sp = val['beta_sp']
+    beta_sp_std = val['beta_sp_std']
     br_mu= val['br_mu']
     br_sigma = val['br_sigma']
     obs= val['obs']
-    my_vals= {'pop':pop,'surveyList':surv,'alpha':alpha,'br_mu':br_mu,'br_sigma':br_sigma,'rratssearch':True}
+    try:
+        save_folder = val['save_folder']
+    except:
+        save_folder='pmsurv_sp'
+    my_vals= {'pop':pop,'surveyList':surv,'beta_sp':beta_sp,'beta_sp_std':beta_sp_std,'br_mu':br_mu,'br_sigma':br_sigma,'rratssearch':True}
     #do simulation
     ndet=[]
     for i in range(average):
-        ndet.append(dosurvey_wrapper(my_vals))
+        ndet.append(dosurvey_wrapper(my_vals,save_folder=save_folder))
     ndet_avg = np.mean(ndet)
-    ndet_error=np.abs(ndet_avg-obs)
+    ndet_error = ndet_avg-obs
     del pop
-    print(str(val)+str(ndet_error))
+    print(str(val)+': '+str(ndet_error))
     return ndet_error
 
 

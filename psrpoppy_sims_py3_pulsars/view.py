@@ -1,9 +1,11 @@
+import sys
+
+sys.path.append('/home/adam/Documents/PSRPOPPY/PsrPopChime/lib/python')
+
 import matplotlib.pyplot as plt
 import numpy as np
-import sys
-from psrpoppy import galacticops as go
+import galacticops as go
 import pickle
-sys.path.append('/home/adam/anaconda3/envs/psrpoppy3/lib/python3.7/psrpoppy/')
 l=np.linspace(0,360,1000)
 b=np.linspace(-90,90,1000)
 ras=[]
@@ -15,9 +17,9 @@ for i in range(len(l)):
 
 filenames = sys.argv
 with open(filenames[1],'rb') as surv:
-    survey = pickle.load(surv)
-with open(filenames[2],'rb') as my_pop:
-    pop = pickle.load(my_pop)
+    pop = pickle.load(surv)
+#with open(filenames[2],'rb') as my_pop:
+#    pop = pickle.load(my_pop)
 
 def plot_surv_coord(survey,s=5,fig_num=1,plot_gal_plane=True,label=''):
     ra_deg = []
@@ -108,6 +110,6 @@ def plot_surv_coord(survey,s=5,fig_num=1,plot_gal_plane=True,label=''):
 
 
 pop_gains,pop_tobs = plot_surv_coord(pop,0.5,1,False,'Synthesized population')
-surv_gains,surv_tobs = plot_surv_coord(survey,1,1,True,'CHIME survey')
+#surv_gains,surv_tobs = plot_surv_coord(survey,1,1,True,'CHIME survey')
 
 plt.show()

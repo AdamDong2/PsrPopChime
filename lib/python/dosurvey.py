@@ -83,7 +83,8 @@ def write(surveyPops,
 
 def run(pop,
         surveyList,
-        alpha=0,
+        beta_sp=0,
+        beta_sp_std=0,
         br_mu=0,
         br_sigma=0,
         nostdout=False,
@@ -92,6 +93,7 @@ def run(pop,
         accelsearch=False,
         jerksearch=False,
         rratssearch=False,
+        rrat_distribution='lnorm',
         giantpulse=False):
 
     """ Run the surveys and detect the pulsars."""
@@ -111,6 +113,7 @@ def run(pop,
 
         # create a new population object to store discovered pulsars in
         survpop = Population()
+        allpop = Population()
         # HERE SHOULD INCLUDE THE PROPERTIES OF THE ORIGINAL POPULATION
 
         # counters
@@ -121,29 +124,27 @@ def run(pop,
         nbr = 0
         # loop over the pulsars in the population list
         if rratssearch:
-            br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))
-        '''
+            #should really draw the burst rate in the generate population stage
+            #br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))
+            br = distributions.drawlnorm(br_mu,br_sigma,len(pop.population))
+
+        
         #plot burst rates
-        import distributions as dist
-        import matplotlib.pyplot as plt
-        import numpy as np
-        print(br_mu)
-        print(br_sigma)
-        print(np.min(br))
-        dist.plot_loghist(br,100)
-        plt.title('interburst rate '+ r'$\mu_{IBR}$='+str(br_mu)+r' $\sigma$='+str(br_sigma))
-        plt.xlabel('Interburst rate (periods)')
-        plt.ylabel('Number')
-        #plt.xlim([0,5])
-        plt.show()
-        '''
+        plot=0
+        if plot:
+            import distributions as dist
+            import matplotlib.pyplot as plt
+            import numpy as np
+            dist.plot_loghist(br,1000)
+            plt.show()
+        
         '''
         import matplotlib.pyplot as plt
         lum = list(psr.lum_inj_mu for psr in pop.population)
         import distributions as dist
         dist.plot_loghist(lum,1000)
         plt.show()
-        '''
+        ''' 
         for i,psr in enumerate(pop.population):
             # pulsar could be dead (evolve!) - continue if so
             #print('hi')
@@ -151,15 +152,15 @@ def run(pop,
                 continue
             #draw burst rate
             psr.br = br[i]
-            #nADAM EDIT: If the survey is CHIME FRB, need to set custom gain and t_obs
+            #ADAM EDIT: If the survey is CHIME/FRB, need to set custom gain and t_obs
             if s.surveyName == 'CHIME':
                 s.gain = calc_gain(psr)
+                #days on sky * transit time
                 s.tobs = s.dos*calc_tobs(psr)
                 psr.gain = s.gain
                 psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
-            snr = s.SNRcalc(psr,pop,alpha,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse)
-            
+            snr = s.SNRcalc(psr,pop,beta_sp,beta_sp_std,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse,rrat_distribution=rrat_distribution)
             #print snr
             # add scintillation, if required
             # modifying S/N rather than flux is sensible because then
@@ -179,6 +180,10 @@ def run(pop,
                     # number of discoveries by the survey
                     psr.detected = True
                     s.discoveries += 1
+            if snr>0:
+                #all pulsars that could have possibly been detected
+                psr.snr=snr
+                allpop.population.append(psr)
 
             elif snr == -1.0:
                 nsmear += 1
@@ -209,7 +214,19 @@ def run(pop,
                        nout=nout,
                        nbr=nbr,
                        ndisc=s.discoveries)
-        surveyPops.append([surv, survpop, d])
+        surveyPops.append([surv, survpop,allpop, d])
+    #survpop is only of detected pulsars. we should do one for all pulsars
+    '''
+    s_max=[]
+    import distributions as dist
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    for psr in survpop.population:
+        s_max.append(psr.S_max_dect)
+    dist.plot_loghist(s_max,1000)
+    plt.show()
+    '''
 
     if allsurveyfile:
         allsurvpop = Population()

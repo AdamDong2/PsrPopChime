@@ -9,22 +9,26 @@ import matplotlib.pyplot as plt
 def grid_search(fn):
     mp=1
     #define parameter space
-    alpha_arr = np.linspace(-2.01,-4.01,6)
-    br_mu = np.linspace(1,5,20)
-    br_sigma = np.linspace(1,10,20)
+    beta_sp = np.linspace(-0.5,-5.01,4)
+    br_mu = np.linspace(2.7,4,4)
+    br_sigma = np.linspace(0.1,0.5,4)
+    #beta_sp=[-2.01]
+    #br_mu=[2.7]
+    #br_sigma=[0.34]
     #easiest to just combine the arrays into one large dict
     param_dict=[]
-    for i in range(len(alpha_arr)):
+    for i in range(len(beta_sp)):
         for j in range(len(br_mu)):
             for k in range(len(br_sigma)):
-                params = {'alpha':alpha_arr[i],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':129,'avg':10,'surv':['PMSURV']}
+                params = {'beta_sp':beta_sp[i],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':270,'avg':10,'surv':['PMSURV']}
                 param_dict.append(params)
     #for loop over everything
     if mp: 
         with Pool(35) as p:
             ndets_error=np.array(p.map(sample_point,param_dict))
-        np.save(fn,(ndets_error,alpha_arr,br_mu,br_sigma))
+        np.save(fn,(ndets_error,beta_sp,br_mu,br_sigma))
     else:
+        print(param_dict)
         ndets_error=[]
         for params in param_dict:
             ndets_error.append(sample_point(params))
@@ -46,34 +50,34 @@ def plotting(fn):
             br_sig_min[i,j] = br_sigma[np.argmin(ndets_error[i,j,:])]
             params = {'alpha':alpha_arr[i],'br_mu':br_mu[j],'br_sigma':br_sig_min[i,j],'obs':0,'avg':1,'surv':['CHIME']}
             params_dict.append(params)
-    
+    '''
     with Pool(10) as p:
         chime_dets = np.array(p.map(sample_point,params_dict))
     chime_pop_min= chime_dets.reshape((len(alpha_arr),len(br_mu)))
     np.savez('chime_results_'+fn,ndets=ndets_min,chime=chime_pop_min) 
-
+    '''
     X,Y = np.meshgrid(br_mu,alpha_arr)
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X,Y,ndets_min,antialiased=False)
-    ax.set_xlabel('IBR')
-    ax.set_ylabel(r'$\alpha$')
+    ax.set_xlabel('P')
+    ax.set_ylabel(r'$\beta$')
     ax.set_zlabel(r'$\Delta$ Detections')
-    ax.set_zlim([0,120])
+    #ax.set_zlim([0,120])
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X,Y,br_sig_min,antialiased=False)
-    ax.set_xlabel('IBR')
-    ax.set_ylabel(r'$\alpha$')
-    ax.set_zlabel(r'IBR $\sigma$')
-    
+    ax.set_xlabel('P')
+    ax.set_ylabel(r'$\beta$')
+    ax.set_zlabel(r'P $\sigma$')
+    '''
     fig = plt.figure()
     ax = fig.gca(projection='3d')
     surf = ax.plot_surface(X,Y,chime_pop_min,antialiased=False)
     ax.set_xlabel('IBR')
     ax.set_ylabel(r'$\alpha$')
     ax.set_zlabel('CHIME Detections')
-    
+    '''
     #plt.figure()
     #index = np.argmin(ndets_min)
     #plt.scatter(ndets_min[index],chime_dets[index])
@@ -87,5 +91,5 @@ def plotting(fn):
 
 
 import sys
-#grid_search(sys.argv[1])
-plotting(sys.argv[1]+'.npy')
+grid_search(sys.argv[1])
+#plotting(sys.argv[1]+'.npy')
