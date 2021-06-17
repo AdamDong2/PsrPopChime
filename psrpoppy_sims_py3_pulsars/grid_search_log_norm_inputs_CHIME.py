@@ -18,12 +18,12 @@ def grid_search(fn,inputs):
     #easiest to just combine the arrays into one large dict
     param_dict=[]
     now = datetime.now()
-    dt_str = now.strftime("%Y%m%d%H%M%S")+'_PMSURV_EDIT/'
+    dt_str = now.strftime("%Y%m%d%H%M%S")+'_CHIME/'
     os.mkdir(dt_str)
     for my_inputs in my_parameters:
         for j in range(len(br_mu)):
             for k in range(len(br_sigma)):
-                params = {'beta_sp':my_inputs[0],'beta_sp_std':my_inputs[1],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':270,'avg':1,'surv':['PMSURV_EDIT'],'save_folder':dt_str}
+                params = {'beta_sp':my_inputs[0],'beta_sp_std':my_inputs[1],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':0,'avg':1,'surv':['CHIME'],'save_folder':dt_str}
                 param_dict.append(params)
     #for loop over everything
     if mp: 

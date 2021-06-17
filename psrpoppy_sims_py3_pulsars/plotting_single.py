@@ -9,7 +9,7 @@ sigma_std=a[3]
 
 sigma_array = list(param['beta_sp'] for param in params)
 sigma_std_arr = list(param['beta_sp_std'] for param in params)
-        
+'''        
 ndet = np.reshape(ndet,(len(sigma),len(sigma_std)))
 sigma_array = np.reshape(sigma_array,(len(sigma),len(sigma_std)))
 sigma_std_arr = np.reshape(sigma_std_arr,(len(sigma),len(sigma_std)))
@@ -27,3 +27,11 @@ bar.set_label('delta ndet')
 plt.xlabel('Sigma')
 plt.ylabel('Sigma_std')
 plt.show()
+'''
+
+plt.plot(sigma,ndet)
+plt.axhline(y=0, color='r', linestyle='-')
+plt.xlabel('sigma')
+plt.ylabel('delta_ndet')
+plt.show()
+

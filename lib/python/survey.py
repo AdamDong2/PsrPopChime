@@ -399,8 +399,10 @@ class Survey:
             #pulsar.pop_time=np.random.poisson(pulsar.br*self.tobs)
             #print(pulsar.br)
             #change to bursts/hour
-            pulsar.pop_time = int(self.tobs/(pulsar.br/1000))
-            
+
+            pulsar.pop_time = int(pulsar.tobs/(pulsar.br/1000))
+            #if pulsar.pop_time>1e5:
+            #    pulsar.pop_time=int(1e5)
         pulsar.period=pulsar.br 
         if pulsar.dead:
             return 0.
@@ -561,9 +563,8 @@ class Survey:
                 
                 fluxes=self.calcflux(pulsar, pop.ref_freq)
                 #ADAM EDIT: width changed to seconds instead of miliseconds???
-                pulse_snr = degfac* rad.single_pulse_snr(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,fluxes*1e-3,self.beta)
+                pulse_snr = degfac* rad.single_pulse_snr(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),pulsar.gain,fluxes*1e-3,self.beta)
                 pulsar.lum_1400=np.max(pulsar.lum_1400)
-
                 sig_to_noise = np.max(pulse_snr)
                 if sig_noise_f is not None:
                     pulsar.r=sig_to_noise/sig_noise_f
@@ -572,7 +573,6 @@ class Survey:
 
                 #print(detected_bursts)
                 if detected_bursts>=min_ndet:
-
                     pulsar.det_pulses=fluxes[pulse_snr >= self.SNRlimit]
                     pulsar.det_nos=len(pulsar.det_pulses)
                 else:

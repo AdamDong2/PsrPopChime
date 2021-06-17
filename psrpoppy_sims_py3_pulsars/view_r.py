@@ -123,7 +123,32 @@ def plot_surv_coord(survey,s=5,fig_num=1,plot_gal_plane=True,label=''):
     plt.xlabel('r')
     return gains,tobs
 
-pop_gains,pop_tobs = plot_surv_coord(pop,0.5,1,False,'Synthesized population')
+import os
+files=os.listdir(sys.argv[1])
+sig_arr=[]
+r_arr=[]
+sig_std_arr=[]
+for file in files:
+    pop_det=np.load(os.path.join(sys.argv[1],file),allow_pickle=1)[0][1]
+    r=[]
+    for pulsar in pop_det.population:
+        try:
+            r.append(pulsar.r)
+        except:
+            pass
+    r=np.array(r)
+    r_rrat =r[r>1]
+    params=file.split('_')
+    sigma = params[2]
+    sigma_std = params[3].strip('.npy')
+    r_arr.append(len(r_rrat)/len(r))
+    sig_arr.append(float(sigma))
+    sig_std_arr.append(float(sigma_std))
+plt.scatter(sig_arr,sig_std_arr,c=r_arr)
+bar=plt.colorbar()
+plt.xlabel('Sigma')
+plt.ylabel('Sigma_std')
+bar.set_label('probability r>1 (#r>1/total_ndet)')
+#pop_gains,pop_tobs = plot_surv_coord(pop,0.5,1,False,'Synthesized population')
 #surv_gains,surv_tobs = plot_surv_coord(survey,1,1,True,'CHIME survey')
-
 plt.show()

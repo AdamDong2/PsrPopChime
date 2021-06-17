@@ -157,8 +157,8 @@ def run(pop,
                 s.gain = calc_gain(psr)
                 #days on sky * transit time
                 s.tobs = s.dos*calc_tobs(psr)
-                psr.gain = s.gain
-                psr.tobs = s.tobs
+            psr.gain = s.gain
+            psr.tobs = s.tobs
             # is the pulsar over the detection threshold?
             snr = s.SNRcalc(psr,pop,beta_sp,beta_sp_std,accelsearch=accelsearch,jerksearch=jerksearch,rratssearch=rratssearch,giantpulse=giantpulse,rrat_distribution=rrat_distribution)
             #print snr
