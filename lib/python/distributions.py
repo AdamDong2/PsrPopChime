@@ -34,6 +34,7 @@ def drawlnorm(mean, sigma,size=1):
     """Draw a random number from a log-normal distribution"""
     #return 10**random.gauss(mean,sigma)
     return 10.0**np.random.normal(mean,sigma,size)
+    # return 10**random.gauss(mean,sigma)
 
 def drawlnorm_e(mean, sigma,size=1):
     """Draw a random number from a log-normal distribution"""

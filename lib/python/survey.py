@@ -107,7 +107,7 @@ def makepointing(coord1, coord2, coordtype):
 
 class Survey:
     """Class to store survey parameters and methods"""
-    def __init__(self, surveyName, pattern='gaussian'):
+    def __init__(self, surveyName, pattern='gaussian',dos=0):
         """Read in a survey file and obtain the survey parameters"""
 
         # try to open the survey file locally first
@@ -274,7 +274,10 @@ class Survey:
                 # turn on AA
                 self.AA = True
             elif a[1].count('days on sky'):
-                self.dos=float(a[0].strip())
+                if dos>0:
+                    self.dos = dos
+                else:
+                    self.dos=float(a[0].strip())
             else:
                 print("Parameter '", a[1].strip(), "' not recognized!")
 
@@ -377,8 +380,8 @@ class Survey:
     def SNRcalc(self,
                 pulsar,
                 pop,
-                beta_sp,
-                beta_sp_std,
+                beta_sp=0,
+                beta_sp_std=0,
                 accelsearch=False,
                 jerksearch=False,
                 rratssearch=False,
@@ -463,19 +466,15 @@ class Survey:
         #print(pulsar.S_max_dect)
         # radiometer signal to noise
         if (rratssearch==False) & (giantpulse==False):
-            if self.surveyName=='CHIME':
-                #print('CHIME')
-                sig_to_noise=rad.single_pulse_snr(self.npol,self.bw*1e6,weff_ms*1e-3,(self.tsys+ self.tskypy(pulsar)),self.gain,self.calcflux(pulsar, pop.ref_freq)*1e-3,self.beta)
-            else:
-                sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
-                                           self.beta,
-                                           self.tsys,
-                                           self.tskypy(pulsar),
-                                           self.gain,
-                                           self.npol,
-                                           self.tobs,
-                                           self.bw,
-                                           delta)
+            sig_to_noise = rad.calcSNR(self.calcflux(pulsar, pop.ref_freq),
+                                        self.beta,
+                                        self.tsys,
+                                        self.tskypy(pulsar),
+                                        self.gain,
+                                        self.npol,
+                                        self.tobs,
+                                        self.bw,
+                                        delta)
         elif giantpulse:
             #check how many times it burst
             #use 0.001 as the fraction of periods to emit a GP for now - place holder

@@ -39,7 +39,6 @@ def generate(ngen,
              siDistPars=[-1.6, 0.35],
              lumDistType='lnorm',
              lumDistPars=[-1.1, 0.9],
-             brPars=[5,5],
              zscaleType='exp',
              zscale=0.33,
              duty_percent=6.,
@@ -472,7 +471,7 @@ def generate(ngen,
                 elif jerksearch:
                     SNR = surv.SNRcalc(p, pop, jerksearch=True)
                 else:
-                    SNR = surv.SNRcalc(p, pop, rratssearch=False)
+                    SNR = surv.SNRcalc(p, pop)
 
                 if SNR > surv.SNRlimit:
                     # SNR is over threshold

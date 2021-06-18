@@ -11,9 +11,9 @@ def grid_search(fn):
     #define parameter space
     #this one uses a log normal distribution for the single burst luminosities, this makes things easier to handle
     #take it as a multiple of the mean luminosity
-    lum_sigma = np.linspace(0.1,2,41)
-    lum_sigma_std = [0]
-    #lum_sigma_std = np.linspace(0.01,0.9,40)
+    lum_sigma = np.linspace(0.1,1.5,41)
+    # lum_sigma_std = [0]
+    lum_sigma_std = np.linspace(0.01,0.9,40)
     #br_mu = np.linspace(2.7,4,4)
     #br_sigma = np.linspace(0.1,0.5,4)
     #beta_sp=[-2.01]
@@ -25,11 +25,11 @@ def grid_search(fn):
         for m in range(len(lum_sigma_std)):
             for j in range(len(br_mu)):
                 for k in range(len(br_sigma)):
-                    params = {'beta_sp':lum_sigma[i],'beta_sp_std':lum_sigma_std[m],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':270,'avg':5,'surv':['PMSURV_EDIT']}
+                    params = {'beta_sp':lum_sigma[i],'beta_sp_std':lum_sigma_std[m],'br_mu':br_mu[j],'br_sigma':br_sigma[k],'obs':278,'avg':5,'surv':['PMSURV_EDIT']}
                     param_dict.append(params)
     #for loop over everything
     if mp: 
-        with Pool(40) as p:
+        with Pool(20) as p:
             ndets_error=np.array(p.map(sample_point,param_dict))
         np.save(fn,(ndets_error,param_dict,lum_sigma,lum_sigma_std,br_mu,br_sigma))
     else:
@@ -96,4 +96,4 @@ def plotting(fn):
 
 import sys
 grid_search(sys.argv[1])
-#plotting(sys.argv[1]+'.npy')
+# plotting(sys.argv[1]+'.npy')

@@ -94,7 +94,8 @@ def run(pop,
         jerksearch=False,
         rratssearch=False,
         rrat_distribution='lnorm',
-        giantpulse=False):
+        giantpulse=False,
+        dos=0):
 
     """ Run the surveys and detect the pulsars."""
 
@@ -106,7 +107,7 @@ def run(pop,
     # loop over the surveys we want to run on the pop file
     surveyPops = []
     for surv in surveyList:
-        s = Survey(surv)
+        s = Survey(surv,dos=dos)
         s.discoveries = 0
         if not nostdout:
             print("\nRunning survey {0}".format(surv))
@@ -123,6 +124,7 @@ def run(pop,
         ndet = 0
         nbr = 0
         # loop over the pulsars in the population list
+        #do this if BR is different from period
         if rratssearch:
             #should really draw the burst rate in the generate population stage
             #br = distributions.augmenteddrawlnorm(br_mu,br_sigma,len(pop.population))

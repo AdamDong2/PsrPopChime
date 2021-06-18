@@ -3,7 +3,7 @@ sys.path.append('/home/adam/Documents/PSRPOPPY/PsrPopChime/lib/python')
 import populate,dosurvey
 from matplotlib import pyplot as plt
 import numpy as np
-pop = populate.generate(112000,siDistPars=[-1, 2])
+pop = populate.generate(1005,surveyList=['PMSURV'])
 pop.write(sys.argv[1])
 '''
 pop = np.load(sys.argv[1],allow_pickle=1)
