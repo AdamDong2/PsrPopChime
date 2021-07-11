@@ -11,9 +11,9 @@ def grid_search(fn):
     #define parameter space
     #this one uses a log normal distribution for the single burst luminosities, this makes things easier to handle
     #take it as a multiple of the mean luminosity
-    lum_sigma = np.linspace(0.1,1.5,41)
+    lum_sigma = np.linspace(0.1,2.5,11)
     # lum_sigma_std = [0]
-    lum_sigma_std = np.linspace(0.01,0.9,40)
+    lum_sigma_std = np.linspace(0.01,1.4,10)
     #br_mu = np.linspace(2.7,4,4)
     #br_sigma = np.linspace(0.1,0.5,4)
     #beta_sp=[-2.01]
@@ -29,7 +29,7 @@ def grid_search(fn):
                     param_dict.append(params)
     #for loop over everything
     if mp: 
-        with Pool(20) as p:
+        with Pool(40) as p:
             ndets_error=np.array(p.map(sample_point,param_dict))
         np.save(fn,(ndets_error,param_dict,lum_sigma,lum_sigma_std,br_mu,br_sigma))
     else:

@@ -16,8 +16,8 @@ for i in range(len(l)):
     decs.append(dec)
 
 filenames = sys.argv
-#with open(filenames[1],'rb') as surv:
-#    pop = pickle.load(surv)
+with open(filenames[1],'rb') as surv:
+   pop = pickle.load(surv)
 #with open(filenames[1],'rb') as my_pop:
 #    pop = np.load(my_pop,allow_pickle=1)[0][1]
 #    print(pop)
@@ -51,13 +51,13 @@ def plot_surv_coord(survey,s=5,fig_num=1,plot_gal_plane=True,label=''):
         spindex.append(pulsar.spindex)
         lum_1400.append(pulsar.lum_1400)
         period.append(np.log10(pulsar.period))
-        s_max_dect.append(pulsar.S_max_dect)
-        try:
-            r.append(pulsar.r)
-        except:
-            pass
-        snr.append(pulsar.snr)
-        fold_snr.append(pulsar.fold_sn)
+        # s_max_dect.append(pulsar.S_max_dect)
+        # try:
+        #     r.append(pulsar.r)
+        # except:
+        #     pass
+        # snr.append(pulsar.snr)
+        # fold_snr.append(pulsar.fold_snr)
     plt.figure(fig_num)
     plt.scatter(ra_deg,dec_deg,marker='.',s=s,label=label)
     plt.scatter
@@ -112,7 +112,7 @@ def plot_surv_coord(survey,s=5,fig_num=1,plot_gal_plane=True,label=''):
         pass
     plt.figure(fig_num+7)
     plt.hist(period,100,label=label)
-    plt.xlabel('log 10(period)')
+    plt.xlabel('log 10(period(ms))')
     plt.ylabel('# of pulsars')
     plt.legend()
     plt.figure(fig_num+8)

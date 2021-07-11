@@ -1,6 +1,6 @@
   2.0   ! survey degradation factor
   1.16  ! antenna gain (K/Jy)
-  30. ! days on sky (CHIME specific parameter)
+  11. ! days on sky (CHIME specific parameter)
   1.    ! sampling time (ms)
   30.   ! system temperature (K)
   600.  ! centre frequency (MHz)

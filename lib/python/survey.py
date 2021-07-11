@@ -540,7 +540,8 @@ class Survey:
                         #scale has to be positive, so it's a truncated normal distribution
                         sigma_L=np.random.normal(beta_sp,beta_sp_std)
                     #print('beta_sp:'+str(beta_sp)+' std:'+str(beta_sp_std)+' sigma_L: '+str(sigma_L))
-                    pulsar.lum_1400=dist.drawlnorm_e(np.log(pulsar.lum_inj_mu),sigma_L,pulsar.pop_time)
+                    lum_log_mu = np.log(pulsar.lum_inj_mu)-(0.5*sigma_L**2)
+                    pulsar.lum_1400=dist.drawlnorm_e(lum_log_mu,sigma_L,pulsar.pop_time)
                 else:
                     #if not a log normal distribution, use a power law
                     #this might not be correct
